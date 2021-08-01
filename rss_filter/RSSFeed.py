@@ -57,21 +57,36 @@ class RSSFeed:
         except FileNotFoundError:
             previous_articles = []
 
-        # Filter based on id and date.
         current_articles = self.locate_all_elements(self.root, ITEM_TAG, namespaces, [])
 
         for article in current_articles:
             found = False
+            removed = False
             article_id = article.find(self.track_filters['id'], namespaces).text
             article_date = article.find(self.track_filters['date'], namespaces).text
+
+            # Filter based on id and date
             for previous_article in previous_articles:
                 if article_id == previous_article['id']:
                     found = True
                     if article_date != previous_article['date']:
+                        removed = True
                         self.remove(article)
-                        self.log_removal(previous_article['id'], "duplicate")
+                        self.log_removal(article_id, "duplicate")
+
             if not found:
                 previous_articles.append({'id': article_id, 'date': article_date})
+
+            # Filter based on other criteria
+            if not removed:
+                if self.other_filters:
+                    for filt in self.other_filters:
+                        for tag in filt:
+                            element = article.find(tag, namespaces)
+                            if element.text == filt[tag]:
+                                self.remove(article)
+                                self.log_removal(article_id, "filtered")
+
 
         with open(filename, 'w') as file:
             yaml.dump(previous_articles, file)
