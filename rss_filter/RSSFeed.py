@@ -17,11 +17,10 @@ class RSSFeed:
     """
 
 
-
     def __init__(self,
                  url: str,
                  track_filters: dict,
-                 filename: str,
+                 filename_root: str,
                  other_filters: dict=None):
 
         self.url = url
@@ -31,24 +30,39 @@ class RSSFeed:
         self.root = etree.fromstring(raw_feed)
 
         self.track_filters = track_filters
-        self.filename_root = filename
+        self.filename_root = filename_root
         self.other_filters = other_filters
         self.filtered = False
 
+
     @staticmethod
     def locate_all_elements(node, target, namespaces, result):
-        for el in node:
+        """Recursively search through the node to identify all instances
+        of the target tag.
+
+        """
+        for element in node:
             # Need to remove namespace and prefix from tag name.
-            if etree.QName(el).localname == target:
-                result.append(el)
-            RSSFeed.locate_all_elements(el, target, namespaces, result)
+            if etree.QName(element).localname == target:
+                result.append(element)
+            RSSFeed.locate_all_elements(element, target, namespaces, result)
         return result
 
-    def remove(self, element):
+
+    @staticmethod
+    def remove(element):
+        """Remove an element from root.
+
+        """
         parent = element.getparent()
         parent.remove(element)
 
+
     def filter(self):
+        """Filter out duplicated items and those that meet the filter
+        criteria.
+
+        """
         namespaces = self.root.nsmap
         filename = f"{self.filename_root}.yaml"
         try:
@@ -57,13 +71,17 @@ class RSSFeed:
         except FileNotFoundError:
             previous_articles = []
 
-        current_articles = self.locate_all_elements(self.root, ITEM_TAG, namespaces, [])
+        current_articles = RSSFeed.locate_all_elements(self.root, ITEM_TAG,
+                                                         namespaces, [])
 
         for article in current_articles:
+            article_id = article.find(
+                    self.track_filters['id'], namespaces).text
+            article_date = article.find(
+                    self.track_filters['date'], namespaces).text
+
             found = False
             removed = False
-            article_id = article.find(self.track_filters['id'], namespaces).text
-            article_date = article.find(self.track_filters['date'], namespaces).text
 
             # Filter based on id and date
             for previous_article in previous_articles:
@@ -73,64 +91,24 @@ class RSSFeed:
                         removed = True
                         self.remove(article)
                         self.log_removal(article_id, "duplicate")
-
             if not found:
-                previous_articles.append({'id': article_id, 'date': article_date})
+                previous_articles.append({'id': article_id,
+                        'date': article_date})
 
             # Filter based on other criteria
-            if not removed:
-                if self.other_filters:
-                    for filt in self.other_filters:
-                        for tag in filt:
-                            element = article.find(tag, namespaces)
-                            if element.text == filt[tag]:
-                                self.remove(article)
-                                self.log_removal(article_id, "filtered")
-
+            if (not removed) and self.other_filters:
+                for filt in self.other_filters:
+                    for tag in filt:
+                        element = article.find(tag, namespaces)
+                        if element.text == filt[tag]:
+                            self.remove(article)
+                            self.log_removal(article_id, "filtered")
 
         with open(filename, 'w') as file:
             yaml.dump(previous_articles, file)
 
         self.filtered = True
 
-
-
-        # for element in self.root[0]:
-        #     print(element.tag)
-        #     if element.tag[:4] == "item":
-        #         item = {}
-        #         item['date'] = element.find(self.track_filters['date'], namespaces).text
-        #         item['id'] = element.find(self.track_filters['id'], namespaces).text
-
-        #         found = False
-        #         for article in previous_articles:
-        #             if article['id'] == item['id']:
-        #                 found = True
-        #                 if article['date'] != item['date']:
-        #                     self.root[0].remove(element)
-        #                     self.log_removal(item['id'], "duplicate")
-
-        #         if not found:
-        #             previous_articles.append(item)
-
-        # with open(filename, 'w') as file:
-        #     yaml.dump(previous_articles, file)
-
-        # Filter based on other filters
-        # if self.other_filters:
-        #     for element in self.root[0]:
-        #         if element.tag[:4] == "item":
-        #             for filt in self.other_filters:
-        #                 for filter_id in filt:
-        #                     element_val = element.find(filter_id, namespaces)
-        #                     # filter_id_length = len(filter_id)
-        #                     # breakpoint()
-        #                     # print(element.tag[:filter_id_length])
-        #                     # if element.tag[:filter_id_length] == filter_id:
-        #                     #     item = element.find(filter_id, namespaces).text
-        #                     #     if element.text == filt[filter_id]:
-        #                     #         self.root[0].remove(element)
-        #                     #         self.log_removal(element.find(self.track_filters['id']), "filter")
 
     def output_feed(self):
         if not self.filtered:
@@ -141,30 +119,9 @@ class RSSFeed:
         with open(filename, 'wb') as file:
             tree.write(file)
 
+
     def log_removal(self, id, reason):
         filename = f"{self.filename_root}.log"
 
         with open(filename, 'a') as file:
             file.write(f"{datetime.now()}: Removed {id} ({reason})\n")
-
-if __name__ == "__main__":
-    with open(CONFIG_FILE) as file:
-        configuration = yaml.load(file.read(), Loader=yaml.FullLoader)
-
-    journals = []
-    for journal_entry in configuration:
-        url = configuration[journal_entry]['url']
-        track_filters = configuration[journal_entry]['track']
-        filename = configuration[journal_entry]['file']
-        if 'filter' in configuration[journal_entry]:
-            other_filters = configuration[journal_entry]['filter']
-        else:
-            other_filters = None
-        feed = RSSFeed(url, track_filters, filename, other_filters)
-        journals.append(feed)
-
-    for journal in journals:
-        journal.output_feed()
-
-
-
