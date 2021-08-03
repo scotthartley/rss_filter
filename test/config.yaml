@@ -20,3 +20,10 @@ Science:
     date: dc:date
   filter:
     - prism:section: news_and_analysis
+
+Nature:
+  url: http://feeds.nature.com/nature/rss/current
+  file: nature
+  track:
+    id: prism:doi
+    date: dc:date
