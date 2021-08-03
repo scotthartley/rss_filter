@@ -1,10 +1,15 @@
 from .RSSFeed import RSSFeed
 import yaml
-
-CONFIG_FILE = "config.yaml"
+import argparse
 
 def rss_filter():
-    with open(CONFIG_FILE) as file:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "config_file",
+        help="Name of configuration file")
+    args = parser.parse_args()
+
+    with open(args.config_file) as file:
         configuration = yaml.load(file.read(), Loader=yaml.FullLoader)
 
     journals = []
