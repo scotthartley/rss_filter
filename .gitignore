@@ -1,2 +1,5 @@
 # Specify filepatterns you want git to ignore.
 __pycache__/
+rss_filter.egg-info/
+test/*
+!test/config.yaml

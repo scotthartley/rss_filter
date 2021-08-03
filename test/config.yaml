@@ -1,0 +1,22 @@
+Angewandte Chemie:
+  url: https://onlinelibrary.wiley.com/feed/15213773/most-recent
+  file: angew
+  track:
+    id: prism:doi
+    date: dc:date
+
+Journal of the American Chemical Society:
+  url: http://feeds.feedburner.com/acs/jacsat
+  file: jacs
+  track:
+    id: guid
+    date: pubDate
+
+Science:
+  url: https://science.sciencemag.org/rss/express.xml
+  file: science
+  track:
+    id: link
+    date: dc:date
+  filter:
+    - prism:section: news_and_analysis
