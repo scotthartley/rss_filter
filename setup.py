@@ -11,7 +11,7 @@ exec(open('rss_filter/_version.py').read())
 setup(name='rss_filter',
       version=__version__,
       description='Filters duplicates and unwanted items from rss feeds',
-      # long_description=readme(),
+      long_description=readme(),
       author='Scott Hartley',
       author_email='scott.hartley@miamioh.edu',
       url='https://hartleygroup.org',

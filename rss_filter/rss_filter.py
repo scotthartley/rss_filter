@@ -26,5 +26,3 @@ def rss_filter():
 
     for journal in journals:
         journal.output_feed()
-
-

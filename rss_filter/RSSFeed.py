@@ -6,6 +6,7 @@ import urllib.request
 import yaml
 from datetime import datetime
 
+# Headers for the urllib request
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
 
 ITEM_TAG = "item"
@@ -14,7 +15,6 @@ class RSSFeed:
     """Loads an RSS feed and outputs the same feed after filtering out
     items.
     """
-
 
     def __init__(self,
                  url: str,
@@ -38,7 +38,6 @@ class RSSFeed:
     def locate_all_elements(node, target, namespaces, result):
         """Recursively search through the node to identify all instances
         of the target tag.
-
         """
         for element in node:
             # Need to remove namespace and prefix from tag name.
@@ -50,19 +49,28 @@ class RSSFeed:
 
     @staticmethod
     def remove(element):
-        """Remove an element from root.
-
+        """Remove an element from the tree.
         """
         parent = element.getparent()
         parent.remove(element)
 
 
+    def log_removal(self, id, reason):
+        """Log an article removal
+        """
+        filename = f"{self.filename_root}.log"
+
+        with open(filename, 'a') as file:
+            file.write(f"{datetime.now()}: Removed {id} ({reason})\n")
+
+
     def filter(self):
         """Filter out duplicated items and those that meet the filter
         criteria.
-
         """
         namespaces = self.root.nsmap
+
+        # Load the log of previous articles
         filename = f"{self.filename_root}.yaml"
         try:
             with open(filename, 'r') as file:
@@ -70,10 +78,12 @@ class RSSFeed:
         except FileNotFoundError:
             previous_articles = []
 
+        # Find all articles within the feed
         current_articles = RSSFeed.locate_all_elements(self.root, ITEM_TAG,
-                                                         namespaces, [])
+                                                       namespaces, [])
 
         for article in current_articles:
+            # Filter based on id and date
             article_id = article.find(
                     self.track_filters['id'], namespaces).text
             article_date = article.find(
@@ -81,8 +91,6 @@ class RSSFeed:
 
             found = False
             removed = False
-
-            # Filter based on id and date
             for previous_article in previous_articles:
                 if article_id == previous_article['id']:
                     found = True
@@ -110,6 +118,8 @@ class RSSFeed:
 
 
     def output_feed(self):
+        """Save the updated feed.
+        """
         if not self.filtered:
             self.filter()
 
@@ -117,10 +127,3 @@ class RSSFeed:
         tree = etree.ElementTree(self.root)
         with open(filename, 'wb') as file:
             tree.write(file)
-
-
-    def log_removal(self, id, reason):
-        filename = f"{self.filename_root}.log"
-
-        with open(filename, 'a') as file:
-            file.write(f"{datetime.now()}: Removed {id} ({reason})\n")
