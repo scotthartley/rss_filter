@@ -87,7 +87,7 @@ class RSSFeed:
             article_id = article.find(
                     self.track_filters['id'], namespaces).text
             article_date = article.find(
-                    self.track_filters['date'], namespaces).text
+                    self.track_filters['date'], namespaces).text[:self.track_filters['date_chars']]
 
             found = False
             removed = False

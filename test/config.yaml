@@ -3,7 +3,8 @@ Angewandte Chemie:
   file: angew
   track:
     id: prism:doi
-    date: dc:date
+    date: pubDate
+    date_chars: 16
 
 Journal of the American Chemical Society:
   url: http://feeds.feedburner.com/acs/jacsat
@@ -11,6 +12,7 @@ Journal of the American Chemical Society:
   track:
     id: guid
     date: pubDate
+    date_chars: 16
 
 Science:
   url: https://science.sciencemag.org/rss/express.xml
@@ -18,6 +20,7 @@ Science:
   track:
     id: link
     date: dc:date
+    date_chars: 10
   filter:
     - prism:section: news_and_analysis
 
@@ -27,3 +30,4 @@ Nature:
   track:
     id: prism:doi
     date: dc:date
+    date_chars: 10
