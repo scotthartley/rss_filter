@@ -30,6 +30,7 @@ class RSSFeed:
 
         self.track_filters = track_filters
         self.filename_root = filename_root
+        self.filename_log = f"{self.filename_root}.log"
         self.other_filters = other_filters
         self.filtered = False
 
@@ -58,10 +59,15 @@ class RSSFeed:
     def log_removal(self, id, reason):
         """Log an article removal
         """
-        filename = f"{self.filename_root}.log"
-
-        with open(filename, 'a') as file:
+        with open(self.filename_log, 'a') as file:
             file.write(f"{datetime.now()}: Removed {id} ({reason})\n")
+
+
+    def log_other(self, reason):
+        """Log other issues
+        """
+        with open(self.filename_log, 'a') as file:
+            file.write(f"{datetime.now()}: {reason}\n")
 
 
     def filter(self):
@@ -89,28 +95,33 @@ class RSSFeed:
             article_date = article.find(
                     self.track_filters['date'], namespaces).text[:self.track_filters['date_chars']]
 
-            found = False
-            removed = False
-            for previous_article in previous_articles:
-                if article_id == previous_article['id']:
-                    found = True
-                    if article_date != previous_article['date']:
-                        removed = True
-                        self.remove(article)
-                        self.log_removal(article_id, "duplicate")
-            if not found:
-                previous_articles.append({'id': article_id,
-                        'date': article_date})
+            if (article_id is not None) and (article_date is not None):
+                found = False
+                removed = False
+                for previous_article in previous_articles:
+                    if article_id == previous_article['id']:
+                        found = True
+                        if article_date != previous_article['date']:
+                            removed = True
+                            self.remove(article)
+                            self.log_removal(article_id, "duplicate")
+                if not found:
+                    previous_articles.append({'id': article_id,
+                            'date': article_date})
 
-            # Filter based on other criteria
-            if (not removed) and self.other_filters:
-                for filt in self.other_filters:
-                    for tag in filt:
-                        element = article.find(tag, namespaces)
-                        if element is not None:
-                            if element.text == filt[tag]:
-                                self.remove(article)
-                                self.log_removal(article_id, "filtered")
+                # Filter based on other criteria
+                if (not removed) and self.other_filters:
+                    for filt in self.other_filters:
+                        for tag in filt:
+                            element = article.find(tag, namespaces)
+                            if element is not None:
+                                if element.text == filt[tag]:
+                                    self.remove(article)
+                                    self.log_removal(article_id, "filtered")
+                            else:
+                                self.log_other(f'"{tag}" tag not found')
+            else:
+                self.log_other(f"Article id or date not found")
 
         with open(filename, 'w') as file:
             yaml.dump(previous_articles, file)
