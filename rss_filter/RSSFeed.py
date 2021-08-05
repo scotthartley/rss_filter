@@ -107,9 +107,10 @@ class RSSFeed:
                 for filt in self.other_filters:
                     for tag in filt:
                         element = article.find(tag, namespaces)
-                        if element.text == filt[tag]:
-                            self.remove(article)
-                            self.log_removal(article_id, "filtered")
+                        if element is not None:
+                            if element.text == filt[tag]:
+                                self.remove(article)
+                                self.log_removal(article_id, "filtered")
 
         with open(filename, 'w') as file:
             yaml.dump(previous_articles, file)
