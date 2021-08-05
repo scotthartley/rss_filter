@@ -90,12 +90,15 @@ class RSSFeed:
 
         for article in current_articles:
             # Filter based on id and date
-            article_id = article.find(
-                    self.track_filters['id'], namespaces).text
-            article_date = article.find(
-                    self.track_filters['date'], namespaces).text[:self.track_filters['date_chars']]
+            article_id_element = article.find(
+                    self.track_filters['id'], namespaces)
+            article_date_element = article.find(
+                    self.track_filters['date'], namespaces)
 
-            if (article_id is not None) and (article_date is not None):
+            if ((article_id_element is not None)
+                    and (article_date_element is not None)):
+                article_id = article_id_element.text
+                article_date = article_date_element.text[:self.track_filters['date_chars']]
                 found = False
                 removed = False
                 for previous_article in previous_articles:
@@ -113,13 +116,14 @@ class RSSFeed:
                 if (not removed) and self.other_filters:
                     for filt in self.other_filters:
                         for tag in filt:
-                            element = article.find(tag, namespaces)
-                            if element is not None:
-                                if element.text == filt[tag]:
-                                    self.remove(article)
-                                    self.log_removal(article_id, "filtered")
-                            else:
+                            elements = article.findall(tag, namespaces)
+                            if len(elements) == 0:
                                 self.log_other(f'"{tag}" tag not found')
+                            else:
+                                for element in elements:
+                                    if element.text == filt[tag]:
+                                        self.remove(article)
+                                        self.log_removal(article_id, "filtered")
             else:
                 self.log_other(f"Article id or date not found")
 
