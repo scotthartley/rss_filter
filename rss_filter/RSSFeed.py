@@ -98,13 +98,17 @@ class RSSFeed:
             if ((article_id_element is not None)
                     and (article_date_element is not None)):
                 article_id = article_id_element.text
-                article_date = article_date_element.text[:self.track_filters['date_chars']]
+                article_date_raw = article_date_element.text[:self.track_filters['date_chars']]
+                article_date = datetime.strptime(article_date_raw, self.track_filters['date_format'])
+
                 found = False
                 removed = False
                 for previous_article in previous_articles:
                     if article_id == previous_article['id']:
                         found = True
-                        if article_date != previous_article['date']:
+                        previous_article_date = datetime.strptime(previous_article['date'], self.track_filters['date_format'])
+                        delta = article_date - previous_article_date
+                        if delta.days > self.track_filters['date_max_delta']:
                             removed = True
                             self.remove(article)
                             self.log_removal(article_id, "duplicate")
