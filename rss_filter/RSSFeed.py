@@ -114,7 +114,7 @@ class RSSFeed:
                             self.log_removal(article_id, "duplicate")
                 if not found:
                     previous_articles.append({'id': article_id,
-                            'date': article_date})
+                            'date': article_date_raw})
 
                 # Filter based on other criteria
                 if (not removed) and self.other_filters:
